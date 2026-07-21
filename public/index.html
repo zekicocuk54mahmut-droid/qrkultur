@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pamukova Harita Bulmacası</title>
+  
+  <!-- Fonts & Leaflet CSS -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <!-- HTML5 QR Code Kütüphanesi -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+    body { background-color: #0f172a; color: #f8fafc; min-height: 100vh; display: flex; flex-direction: column; }
+    
+    header { 
+      background: #1e293b; 
+      padding: 15px 20px; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      border-bottom: 1px solid #334155; 
+    }
+    header h1 { font-size: 1.5rem; color: #38bdf8; }
+    
+    .nav-buttons { display: flex; gap: 10px; }
+    .btn-nav { 
+      background: #334155; 
+      color: white; 
+      border: 1px solid #475569; 
+      padding: 8px 16px; 
+      border-radius: 8px; 
+      cursor: pointer; 
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .btn-nav:hover { background: #38bdf8; color: #0f172a; }
+
+    .container { display: flex; flex: 1; gap: 20px; padding: 20px; max-width: 1300px; margin: 0 auto; width: 100%; }
+    #map { flex: 1.5; min-height: 500px; border-radius: 12px; border: 2px solid #38bdf8; background: #1e293b; }
+    
+    .panel { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+    .card { background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; }
+    .card h3 { color: #38bdf8; margin-bottom: 12px; }
+    
+    input[type="text"] { 
+      width: 100%; 
+      padding: 12px; 
+      border-radius: 8px; 
+      border: 1px solid #475569; 
+      background: #0f172a; 
+      color: #fff; 
+      margin-bottom: 10px; 
+      outline: none;
+    }
+    input[type="text"]:focus { border-color: #38bdf8; }
+
+    button { 
+      width: 100%; 
+      padding: 12px; 
+      border-radius: 8px; 
+      border: none; 
+      font-weight: bold; 
+      cursor: pointer; 
+      background: #0284c7; 
+      color: white; 
+      transition: transform 0.1s;
+    }
+    button:active { transform: scale(0.98); }
+    .btn-start { background: #10b981; margin-bottom: 10px; }
+    .btn-qr { background: #8b5cf6; margin-top: 8px; }
+
+    .question-box { background: #0f172a; padding: 12px; border-radius: 8px; border-left: 4px solid #38bdf8; margin-bottom: 10px; }
+    .custom-pin { background: #ef4444; color: white; border: 2px solid white; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 0 12px rgba(239, 68, 68, 0.8); }
+
+    /* Modal / Pop-up Stilleri */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(5px);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: #1e293b;
+      border: 1px solid #38bdf8;
+      border-radius: 16px;
+      padding: 24px;
+      width: 90%;
+      max-width: 500px;
+      position: relative;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .close-btn {
+      position: absolute;
+      top: 15px; right: 15px;
+      background: #ef4444;
+      color: white;
+      border: none;
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    
+    ol { list-style-position: inside; margin-top: 15px; }
+    ol li { 
+      background: #0f172a; 
+      padding: 10px 14px; 
+      border-radius: 8px; 
+      margin-top: 8px; 
+      display: flex; 
+      justify-content: space-between; 
+      border: 1px solid #334155;
+    }
+    ol li b { color: #38bdf8; }
+
+    #reader { width: 100%; border-radius: 8px; overflow: hidden; margin-top: 10px; }
+
+    @media (max-width: 768px) {
+      .container { flex-direction: column; }
+      #map { height: 350px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>📍 Pamukova Harita Bulmacası</h1>
+    <div class="nav-buttons">
+      <button class="btn-nav" onclick="qrModalAc()">📷 QR Kod Oku</button>
+      <button class="btn-nav" onclick="siralamaModalAc()">🏆 Sıralama</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div id="map"></div>
+
+    <div class="panel">
+      <div class="card">
+        <h3>👤 Oyuncu Bilgisi</h3>
+        <input type="text" id="kullanici" placeholder="Adınızı girin..." />
+        <button id="startBtn" class="btn-start" onclick="yarismayiBaslat()">▶️ Süreyi Başlat</button>
+      </div>
+
+      <div class="card">
+        <h3>🧩 Günün Sorusudur</h3>
+        <div class="question-box" id="soru">Soru yükleniyor...</div>
+        <input type="text" id="cevap" placeholder="Cevabınız (veya QR Okutun)..." />
+        <button onclick="cevapGonder()">Cevabı Gönder 🚀</button>
+        <button class="btn-qr" onclick="qrModalAc()">📷 Kamera ile QR Tara</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🏆 SIRALAMA MODAL -->
+  <div id="siralamaModal" class="modal">
+    <div class="modal-content">
+      <button class="close-btn" onclick="modalKapat('siralamaModal')">✕</button>
+      <h3>🏆 En Hızlı Oyuncular</h3>
+      <ol id="liderlerListesi">
+        <li>Yükleniyor...</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 📷 QR KOD TARAYICI MODAL -->
+  <div id="qrModal" class="modal">
+    <div class="modal-content">
+      <button class="close-btn" onclick="qrModalKapat()">✕</button>
+      <h3>📷 QR Kodu Kameraya Gösterin</h3>
+      <div id="reader"></div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // Harita Bağlantısı
+    const map = L.map('map').setView([40.5018, 30.1585], 15);
+    
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: 'OpenStreetMap'
+    }).addTo(map);
+
+    let baslangicZamani = null;
+    let yarismaBasladi = false;
+    let html5QrcodeScanner = null;
+
+    const ipucuIcon = L.divIcon({
+      className: 'custom-pin',
+      html: '📍',
+      iconSize: [34, 34],
+      iconAnchor: [17, 17]
+    });
+
+    // Bulmacayı Yükle
+    fetch('/api/bulmaca')
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('soru').innerText = data.soru;
+        L.marker([data.lat, data.lng], { icon: ipucuIcon }).addTo(map)
+          .bindPopup(`<b>İpucu Noktası</b><br>${data.soru}`).openPopup();
+      });
+
+    function yarismayiBaslat() {
+      baslangicZamani = Date.now();
+      yarismaBasladi = true;
+      const btn = document.getElementById('startBtn');
+      btn.innerText = "⚡ Süre Çalışıyor...";
+      btn.style.background = "#64748b";
+      btn.disabled = true;
+    }
+
+    function cevapGonder() {
+      if (!yarismaBasladi) return alert("⚠️ Lütfen önce süreyi başlatın!");
+      const kullaniciAdi = document.getElementById('kullanici').value.trim() || "Anonim Oyuncu";
+      const cevap = document.getElementById('cevap').value;
+      const gecenSure = ((Date.now() - baslangicZamani) / 1000).toFixed(2);
+
+      fetch('/api/cevapla', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kullaniciAdi, cevap, gecenSure })
+      })
+      .then(res => res.json())
+      .then(data => {
+        alert(data.mesaj);
+        if (data.durum) {
+          document.getElementById('cevap').value = '';
+          siralamaModalAc(); // Doğru cevapta otomatik sıralama açılır
+        }
+      });
+    }
+
+    // Modal Yönetimi
+    function siralamaModalAc() {
+      fetch('/api/liderler')
+        .then(res => res.json())
+        .then(data => {
+          const liste = document.getElementById('liderlerListesi');
+          if (data.length === 0) {
+            liste.innerHTML = "<li style='justify-content:center; color:#64748b;'>Henüz skor kaydedilmedi.</li>";
+          } else {
+            liste.innerHTML = data.map((item, index) => 
+              `<li>
+                <span><b>${index + 1}.</b> ${item.kullaniciAdi}</span>
+                <b>⏱️ ${item.sure} sn</b>
+              </li>`
+            ).join('');
+          }
+        });
+      document.getElementById('siralamaModal').style.display = 'flex';
+    }
+
+    function modalKapat(modalId) {
+      document.getElementById(modalId).style.display = 'none';
+    }
+
+    // QR Kod Tarayıcı Mantığı
+    function qrModalAc() {
+      document.getElementById('qrModal').style.display = 'flex';
+      
+      if (!html5QrcodeScanner) {
+        html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
+          fps: 10, 
+          qrbox: { width: 220, height: 220 } 
+        });
+        
+        html5QrcodeScanner.render(onScanSuccess);
+      }
+    }
+
+    function onScanSuccess(decodedText) {
+      document.getElementById('cevap').value = decodedText;
+      alert("✅ QR Kod Tarandı: " + decodedText);
+      qrModalKapat();
+    }
+
+    function qrModalKapat() {
+      document.getElementById('qrModal').style.display = 'none';
+    }
+  </script>
+
+</body>
+</html>
