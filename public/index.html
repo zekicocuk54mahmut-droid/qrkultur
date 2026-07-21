@@ -121,7 +121,13 @@
     }
     ol li b { color: #38bdf8; }
 
-    #reader { width: 100%; border-radius: 8px; overflow: hidden; margin-top: 10px; }
+    #reader { 
+      width: 100%; 
+      border-radius: 12px; 
+      overflow: hidden; 
+      margin-top: 15px;
+      background: #0f172a;
+    }
 
     @media (max-width: 768px) {
       .container { flex-direction: column; }
@@ -191,7 +197,8 @@
 
     let baslangicZamani = null;
     let yarismaBasladi = false;
-    let html5QrcodeScanner = null;
+    let html5QrCode = null;
+    let isScanning = false;
 
     const ipucuIcon = L.divIcon({
       className: 'custom-pin',
@@ -234,7 +241,7 @@
         alert(data.mesaj);
         if (data.durum) {
           document.getElementById('cevap').value = '';
-          siralamaModalAc(); // Doğru cevapta otomatik sıralama açılır
+          siralamaModalAc();
         }
       });
     }
@@ -263,28 +270,58 @@
       document.getElementById(modalId).style.display = 'none';
     }
 
-    // QR Kod Tarayıcı Mantığı
+    // Gelişmiş & Akıllı QR Kod Tarayıcı Mantığı
     function qrModalAc() {
       document.getElementById('qrModal').style.display = 'flex';
       
-      if (!html5QrcodeScanner) {
-        html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
-          fps: 10, 
-          qrbox: { width: 220, height: 220 } 
-        });
-        
-        html5QrcodeScanner.render(onScanSuccess);
+      if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("reader");
       }
+
+      if (isScanning) return;
+
+      const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+
+      // 1. Adım: Önce telefon ve tabletlerde ARKA KAMERAYI zorla
+      html5QrCode.start(
+        { facingMode: "environment" },
+        config,
+        onScanSuccess
+      ).then(() => {
+        isScanning = true;
+      }).catch(() => {
+        // 2. Adım: Arka kamera yoksa (Örn: Masaüstü/Laptop bilgisayar) Varsayılan Ön Kamerayı aç
+        html5QrCode.start(
+          { facingMode: "user" },
+          config,
+          onScanSuccess
+        ).then(() => {
+          isScanning = true;
+        }).catch(err => {
+          console.error("Kamera hatası:", err);
+          alert("⚠️ Kamera açılamadı. Lütfen tarayıcınızın kamera iznini kontrol edin!");
+        });
+      });
     }
 
     function onScanSuccess(decodedText) {
       document.getElementById('cevap').value = decodedText;
-      alert("✅ QR Kod Tarandı: " + decodedText);
+      alert("✅ QR Kod Okundu: " + decodedText);
       qrModalKapat();
     }
 
     function qrModalKapat() {
-      document.getElementById('qrModal').style.display = 'none';
+      if (html5QrCode && isScanning) {
+        html5QrCode.stop().then(() => {
+          isScanning = false;
+          document.getElementById('qrModal').style.display = 'none';
+        }).catch(() => {
+          isScanning = false;
+          document.getElementById('qrModal').style.display = 'none';
+        });
+      } else {
+        document.getElementById('qrModal').style.display = 'none';
+      }
     }
   </script>
 
