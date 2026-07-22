@@ -3,144 +3,265 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pamukova Harita Bulmacası</title>
+  <title>QR Kültür - Tarih & Harita Bulmacası</title>
   
   <!-- Fonts & Leaflet CSS -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   
   <!-- HTML5 QR Code Kütüphanesi -->
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
-    body { background-color: #0f172a; color: #f8fafc; min-height: 100vh; display: flex; flex-direction: column; }
+    :root {
+      --bg: #0b0f19;
+      --card-bg: rgba(22, 30, 46, 0.75);
+      --border: rgba(255, 255, 255, 0.08);
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.35);
+      --success: #10b981;
+      --text: #f1f5f9;
+      --text-sub: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+    
+    body { 
+      background-color: var(--bg); 
+      color: var(--text); 
+      min-height: 100vh; 
+      display: flex; 
+      flex-direction: column;
+      background-image: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.12), transparent 40%);
+    }
     
     header { 
-      background: #1e293b; 
-      padding: 15px 20px; 
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(12px);
+      padding: 16px 28px; 
       display: flex; 
       justify-content: space-between; 
       align-items: center; 
-      border-bottom: 1px solid #334155; 
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
     }
-    header h1 { font-size: 1.5rem; color: #38bdf8; }
+    
+    .logo-container { display: flex; align-items: center; gap: 10px; }
+    .logo-container h1 { 
+      font-size: 1.4rem; 
+      font-weight: 800; 
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
     
     .nav-buttons { display: flex; gap: 10px; }
     .btn-nav { 
-      background: #334155; 
-      color: white; 
-      border: 1px solid #475569; 
-      padding: 8px 16px; 
-      border-radius: 8px; 
+      background: rgba(255, 255, 255, 0.05); 
+      color: var(--text); 
+      border: 1px solid var(--border); 
+      padding: 10px 18px; 
+      border-radius: 10px; 
       cursor: pointer; 
       font-weight: 600;
-      transition: all 0.2s;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
     }
-    .btn-nav:hover { background: #38bdf8; color: #0f172a; }
+    .btn-nav:hover { 
+      background: var(--accent); 
+      color: #0f172a; 
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
 
-    .container { display: flex; flex: 1; gap: 20px; padding: 20px; max-width: 1300px; margin: 0 auto; width: 100%; }
-    #map { flex: 1.5; min-height: 500px; border-radius: 12px; border: 2px solid #38bdf8; background: #1e293b; }
+    .container { 
+      display: flex; 
+      flex: 1; 
+      gap: 24px; 
+      padding: 24px; 
+      max-width: 1400px; 
+      margin: 0 auto; 
+      width: 100%; 
+    }
+
+    #map { 
+      flex: 1.6; 
+      min-height: 550px; 
+      border-radius: 20px; 
+      border: 1px solid var(--border); 
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      z-index: 1;
+      background: #0f172a;
+    }
     
     .panel { flex: 1; display: flex; flex-direction: column; gap: 20px; }
-    .card { background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; }
-    .card h3 { color: #38bdf8; margin-bottom: 12px; }
+    
+    .card { 
+      background: var(--card-bg); 
+      backdrop-filter: blur(16px);
+      padding: 24px; 
+      border-radius: 20px; 
+      border: 1px solid var(--border); 
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .card h3 { 
+      color: var(--accent); 
+      font-size: 1.1rem; 
+      margin-bottom: 14px; 
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* İlerleme Çubuğu (Progress Bar) */
+    .progress-container {
+      width: 100%;
+      background: rgba(255,255,255,0.08);
+      height: 8px;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 15px;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 10%;
+      background: linear-gradient(90deg, #38bdf8, #818cf8);
+      transition: width 0.3s ease;
+    }
     
     input[type="text"] { 
       width: 100%; 
-      padding: 12px; 
-      border-radius: 8px; 
-      border: 1px solid #475569; 
-      background: #0f172a; 
+      padding: 14px; 
+      border-radius: 12px; 
+      border: 1px solid var(--border); 
+      background: rgba(15, 23, 42, 0.6); 
       color: #fff; 
-      margin-bottom: 10px; 
+      margin-bottom: 12px; 
       outline: none;
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
     }
-    input[type="text"]:focus { border-color: #38bdf8; }
+    input[type="text"]:focus { border-color: var(--accent); }
 
     button { 
       width: 100%; 
-      padding: 12px; 
-      border-radius: 8px; 
+      padding: 14px; 
+      border-radius: 12px; 
       border: none; 
-      font-weight: bold; 
+      font-weight: 700; 
       cursor: pointer; 
-      background: #0284c7; 
+      background: linear-gradient(135deg, #0284c7, #2563eb); 
       color: white; 
-      transition: transform 0.1s;
+      transition: all 0.2s ease;
+      font-size: 0.95rem;
     }
-    button:active { transform: scale(0.98); }
-    .btn-start { background: #10b981; margin-bottom: 10px; }
-    .btn-qr { background: #8b5cf6; margin-top: 8px; }
+    button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(2, 132, 199, 0.4); }
+    button:active { transform: translateY(0); }
+    
+    .btn-start { background: linear-gradient(135deg, #10b981, #059669); margin-bottom: 10px; }
+    .btn-qr { background: linear-gradient(135deg, #8b5cf6, #6d28d9); margin-top: 10px; }
 
-    .question-box { background: #0f172a; padding: 12px; border-radius: 8px; border-left: 4px solid #38bdf8; margin-bottom: 10px; }
-    .custom-pin { background: #ef4444; color: white; border: 2px solid white; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 0 12px rgba(239, 68, 68, 0.8); }
+    .question-box { 
+      background: rgba(15, 23, 42, 0.8); 
+      padding: 16px; 
+      border-radius: 12px; 
+      border-left: 4px solid var(--accent); 
+      margin-bottom: 14px; 
+      font-size: 1rem;
+      line-height: 1.5;
+    }
 
-    /* Modal / Pop-up Stilleri */
+    .badge {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .custom-pin { 
+      background: #ef4444; 
+      color: white; 
+      border: 3px solid #ffffff; 
+      border-radius: 50%; 
+      width: 38px; 
+      height: 38px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      font-size: 18px; 
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.8); 
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      70% { transform: scale(1.08); box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+    /* Modallar */
     .modal {
       display: none;
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(5px);
+      background: rgba(11, 15, 25, 0.85);
+      backdrop-filter: blur(10px);
       z-index: 1000;
       justify-content: center;
       align-items: center;
     }
     .modal-content {
-      background: #1e293b;
-      border: 1px solid #38bdf8;
-      border-radius: 16px;
-      padding: 24px;
+      background: #161e2e;
+      border: 1px solid var(--accent);
+      border-radius: 24px;
+      padding: 28px;
       width: 90%;
-      max-width: 500px;
+      max-width: 520px;
       position: relative;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8);
     }
     .close-btn {
       position: absolute;
-      top: 15px; right: 15px;
-      background: #ef4444;
-      color: white;
-      border: none;
-      width: 30px; height: 30px;
+      top: 18px; right: 18px;
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      width: 32px; height: 32px;
       border-radius: 50%;
       cursor: pointer;
       font-weight: bold;
     }
     
-    ol { list-style-position: inside; margin-top: 15px; }
+    ol { list-style: none; margin-top: 15px; }
     ol li { 
-      background: #0f172a; 
-      padding: 10px 14px; 
-      border-radius: 8px; 
-      margin-top: 8px; 
+      background: rgba(15, 23, 42, 0.6); 
+      padding: 12px 16px; 
+      border-radius: 12px; 
+      margin-top: 10px; 
       display: flex; 
       justify-content: space-between; 
-      border: 1px solid #334155;
+      align-items: center;
+      border: 1px solid var(--border);
     }
-    ol li b { color: #38bdf8; }
+    ol li b { color: var(--accent); }
 
-    #reader { 
-      width: 100%; 
-      border-radius: 12px; 
-      overflow: hidden; 
-      margin-top: 15px;
-      background: #0f172a;
-    }
+    #reader { width: 100%; border-radius: 16px; overflow: hidden; margin-top: 15px; background: #0b0f19; }
 
-    @media (max-width: 768px) {
-      .container { flex-direction: column; }
-      #map { height: 350px; }
+    @media (max-width: 900px) {
+      .container { flex-direction: column; padding: 16px; }
+      #map { height: 380px; min-height: 380px; }
     }
   </style>
 </head>
 <body>
 
   <header>
-    <h1>📍 Pamukova Harita Bulmacası</h1>
+    <div class="logo-container">
+      <h1>📍 QR Kültür - Harita Bulmacası</h1>
+    </div>
     <div class="nav-buttons">
-      <button class="btn-nav" onclick="qrModalAc()">📷 QR Kod Oku</button>
+      <button class="btn-nav" onclick="qrModalAc()">📷 QR Tara</button>
       <button class="btn-nav" onclick="siralamaModalAc()">🏆 Sıralama</button>
     </div>
   </header>
@@ -150,17 +271,26 @@
 
     <div class="panel">
       <div class="card">
-        <h3>👤 Oyuncu Bilgisi</h3>
-        <input type="text" id="kullanici" placeholder="Adınızı girin..." />
-        <button id="startBtn" class="btn-start" onclick="yarismayiBaslat()">▶️ Süreyi Başlat</button>
+        <h3>👤 Oyuncu Kaydı</h3>
+        <input type="text" id="kullanici" placeholder="Adınızı / Rumuzunuzu girin..." />
+        <button id="startBtn" class="btn-start" onclick="yarismayiBaslat()">▶️ Yarışmayı ve Süreyi Başlat</button>
       </div>
 
       <div class="card">
-        <h3>🧩 Günün Sorusudur</h3>
-        <div class="question-box" id="soru">Soru yükleniyor...</div>
-        <input type="text" id="cevap" placeholder="Cevabınız (veya QR Okutun)..." />
+        <h3>
+          🧩 Tarih Bulmacası
+          <span id="soruSayaci" class="badge">Soru 1 / 10</span>
+        </h3>
+        
+        <div class="progress-container">
+          <div id="progressFill" class="progress-fill"></div>
+        </div>
+
+        <div class="question-box" id="soru">Lütfen önce yarışı başlatın!</div>
+        
+        <input type="text" id="cevap" placeholder="Cevabınızı yazın veya QR tara..." />
         <button onclick="cevapGonder()">Cevabı Gönder 🚀</button>
-        <button class="btn-qr" onclick="qrModalAc()">📷 Kamera ile QR Tara</button>
+        <button class="btn-qr" onclick="qrModalAc()">📷 QR Kod İle Cevapla</button>
       </div>
     </div>
   </div>
@@ -169,7 +299,7 @@
   <div id="siralamaModal" class="modal">
     <div class="modal-content">
       <button class="close-btn" onclick="modalKapat('siralamaModal')">✕</button>
-      <h3>🏆 En Hızlı Oyuncular</h3>
+      <h3 style="color: #38bdf8; font-size: 1.3rem;">🏆 En Hızlı Oyuncular</h3>
       <ol id="liderlerListesi">
         <li>Yükleniyor...</li>
       </ol>
@@ -180,73 +310,117 @@
   <div id="qrModal" class="modal">
     <div class="modal-content">
       <button class="close-btn" onclick="qrModalKapat()">✕</button>
-      <h3>📷 QR Kodu Kameraya Gösterin</h3>
+      <h3 style="color: #38bdf8;">📷 QR Kodu Kameraya Gösterin</h3>
       <div id="reader"></div>
     </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // Harita Bağlantısı
-    const map = L.map('map').setView([40.5018, 30.1585], 15);
-    
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // HD Harita İlklendirmesi (High-DPI / Retina Desteği)
+    const map = L.map('map', {
+      center: [40.5018, 30.1585],
+      zoom: 15,
+      zoomControl: false
+    });
+
+    // Kesintisiz, Yüksek Çözünürlüklü CARTO Voyager HD Katmanı
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
       maxZoom: 19,
-      attribution: 'OpenStreetMap'
+      subdomains: 'abcd',
+      detectRetina: true, // Retina/HD Ekran Netleştirme
+      attribution: '&copy; OpenStreetMap &copy; CARTO'
     }).addTo(map);
 
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+    let sorular = [];
+    let mevcutSoruIndex = 0;
     let baslangicZamani = null;
     let yarismaBasladi = false;
+    let currentMarker = null;
     let html5QrCode = null;
     let isScanning = false;
 
     const ipucuIcon = L.divIcon({
       className: 'custom-pin',
       html: '📍',
-      iconSize: [34, 34],
-      iconAnchor: [17, 17]
+      iconSize: [38, 38],
+      iconAnchor: [19, 19]
     });
 
-    // Bulmacayı Yükle
-    fetch('/api/bulmaca')
+    // Sunucudan 10 soruyu çek
+    fetch('/api/sorular')
       .then(res => res.json())
       .then(data => {
-        document.getElementById('soru').innerText = data.soru;
-        L.marker([data.lat, data.lng], { icon: ipucuIcon }).addTo(map)
-          .bindPopup(`<b>İpucu Noktası</b><br>${data.soru}`).openPopup();
+        sorular = data;
+        soruyuEkranaYukle();
       });
+
+    function soruyuEkranaYukle() {
+      if (sorular.length === 0) return;
+
+      const aktif = sorular[mevcutSoruIndex];
+      document.getElementById('soruSayaci').innerText = `Soru ${mevcutSoruIndex + 1} / ${sorular.length}`;
+      document.getElementById('soru').innerText = aktif.soru;
+      
+      // Progress bar güncelle
+      const yuzde = ((mevcutSoruIndex + 1) / sorular.length) * 100;
+      document.getElementById('progressFill').style.width = `${yuzde}%`;
+
+      // Harita Konumunu Güncelle ve Pin Ekle
+      if (currentMarker) map.removeLayer(currentMarker);
+      
+      map.flyTo([aktif.lat, aktif.lng], 16, { duration: 1.2 });
+      
+      currentMarker = L.marker([aktif.lat, aktif.lng], { icon: ipucuIcon }).addTo(map)
+        .bindPopup(`<b>📍 İpucu Noktası ${mevcutSoruIndex + 1}</b><br>${aktif.soru}`).openPopup();
+    }
 
     function yarismayiBaslat() {
       baslangicZamani = Date.now();
       yarismaBasladi = true;
       const btn = document.getElementById('startBtn');
-      btn.innerText = "⚡ Süre Çalışıyor...";
-      btn.style.background = "#64748b";
+      btn.innerText = "⚡ Süre Çalışıyor! Bol Şans";
+      btn.style.background = "#475569";
       btn.disabled = true;
     }
 
     function cevapGonder() {
-      if (!yarismaBasladi) return alert("⚠️ Lütfen önce süreyi başlatın!");
+      if (!yarismaBasladi) return alert("⚠️ Lütfen önce 'Yarışmayı ve Süreyi Başlat' butonuna basın!");
+      
       const kullaniciAdi = document.getElementById('kullanici').value.trim() || "Anonim Oyuncu";
       const cevap = document.getElementById('cevap').value;
       const gecenSure = ((Date.now() - baslangicZamani) / 1000).toFixed(2);
+      const tamamlandi = mevcutSoruIndex === sorular.length - 1;
 
       fetch('/api/cevapla', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kullaniciAdi, cevap, gecenSure })
+        body: JSON.stringify({ 
+          soruIndex: mevcutSoruIndex, 
+          cevap, 
+          kullaniciAdi, 
+          gecenSure,
+          tamamlandi 
+        })
       })
       .then(res => res.json())
       .then(data => {
         alert(data.mesaj);
         if (data.durum) {
           document.getElementById('cevap').value = '';
-          siralamaModalAc();
+          
+          if (data.bitti) {
+            siralamaModalAc();
+          } else {
+            mevcutSoruIndex++;
+            soruyuEkranaYukle();
+          }
         }
       });
     }
 
-    // Modal Yönetimi
     function siralamaModalAc() {
       fetch('/api/liderler')
         .then(res => res.json())
@@ -255,9 +429,10 @@
           if (data.length === 0) {
             liste.innerHTML = "<li style='justify-content:center; color:#64748b;'>Henüz skor kaydedilmedi.</li>";
           } else {
+            const rozetler = ['🥇', '🥈', '🥉'];
             liste.innerHTML = data.map((item, index) => 
               `<li>
-                <span><b>${index + 1}.</b> ${item.kullaniciAdi}</span>
+                <span><b>${rozetler[index] || (index + 1) + '.'}</b> ${item.kullaniciAdi}</span>
                 <b>⏱️ ${item.sure} sn</b>
               </li>`
             ).join('');
@@ -266,42 +441,23 @@
       document.getElementById('siralamaModal').style.display = 'flex';
     }
 
-    function modalKapat(modalId) {
-      document.getElementById(modalId).style.display = 'none';
-    }
+    function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
 
-    // Gelişmiş & Akıllı QR Kod Tarayıcı Mantığı
+    // Kamera Desteği
     function qrModalAc() {
       document.getElementById('qrModal').style.display = 'flex';
-      
-      if (!html5QrCode) {
-        html5QrCode = new Html5Qrcode("reader");
-      }
-
+      if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
       if (isScanning) return;
 
       const config = { fps: 10, qrbox: { width: 220, height: 220 } };
 
-      // 1. Adım: Önce telefon ve tabletlerde ARKA KAMERAYI zorla
-      html5QrCode.start(
-        { facingMode: "environment" },
-        config,
-        onScanSuccess
-      ).then(() => {
-        isScanning = true;
-      }).catch(() => {
-        // 2. Adım: Arka kamera yoksa (Örn: Masaüstü/Laptop bilgisayar) Varsayılan Ön Kamerayı aç
-        html5QrCode.start(
-          { facingMode: "user" },
-          config,
-          onScanSuccess
-        ).then(() => {
-          isScanning = true;
-        }).catch(err => {
-          console.error("Kamera hatası:", err);
-          alert("⚠️ Kamera açılamadı. Lütfen tarayıcınızın kamera iznini kontrol edin!");
+      html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
+        .then(() => isScanning = true)
+        .catch(() => {
+          html5QrCode.start({ facingMode: "user" }, config, onScanSuccess)
+            .then(() => isScanning = true)
+            .catch(err => alert("⚠️ Kamera açılamadı. Kamera izninizi kontrol edin!"));
         });
-      });
     }
 
     function onScanSuccess(decodedText) {
@@ -324,6 +480,5 @@
       }
     }
   </script>
-
 </body>
 </html>
