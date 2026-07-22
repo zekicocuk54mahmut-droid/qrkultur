@@ -15,8 +15,8 @@
   <style>
     :root {
       --bg: #0b0f19;
-      --card-bg: rgba(22, 30, 46, 0.75);
-      --border: rgba(255, 255, 255, 0.08);
+      --card-bg: rgba(22, 30, 46, 0.85);
+      --border: rgba(255, 255, 255, 0.1);
       --accent: #38bdf8;
       --accent-glow: rgba(56, 189, 248, 0.35);
       --success: #10b981;
@@ -36,7 +36,7 @@
     }
     
     header { 
-      background: rgba(15, 23, 42, 0.8);
+      background: rgba(15, 23, 42, 0.9);
       backdrop-filter: blur(12px);
       padding: 16px 28px; 
       display: flex; 
@@ -46,7 +46,6 @@
       position: sticky; top: 0; z-index: 100;
     }
     
-    .logo-container { display: flex; align-items: center; gap: 10px; }
     .logo-container h1 { 
       font-size: 1.4rem; 
       font-weight: 800; 
@@ -57,7 +56,7 @@
     
     .nav-buttons { display: flex; gap: 10px; }
     .btn-nav { 
-      background: rgba(255, 255, 255, 0.05); 
+      background: rgba(255, 255, 255, 0.08); 
       color: var(--text); 
       border: 1px solid var(--border); 
       padding: 10px 18px; 
@@ -133,7 +132,7 @@
       padding: 14px; 
       border-radius: 12px; 
       border: 1px solid var(--border); 
-      background: rgba(15, 23, 42, 0.6); 
+      background: rgba(15, 23, 42, 0.7); 
       color: #fff; 
       margin-bottom: 12px; 
       outline: none;
@@ -155,18 +154,24 @@
       font-size: 0.95rem;
     }
     button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(2, 132, 199, 0.4); }
-    button:active { transform: translateY(0); }
     
-    .btn-start { background: linear-gradient(135deg, #10b981, #059669); margin-bottom: 10px; }
+    .btn-start { 
+      background: linear-gradient(135deg, #10b981, #059669); 
+      font-size: 1.05rem;
+      padding: 16px;
+    }
 
     .question-box { 
-      background: rgba(15, 23, 42, 0.8); 
-      padding: 16px; 
+      background: rgba(15, 23, 42, 0.85); 
+      padding: 18px; 
       border-radius: 12px; 
       border-left: 4px solid var(--accent); 
       margin-bottom: 14px; 
       font-size: 1rem;
       line-height: 1.5;
+      min-height: 80px;
+      display: flex;
+      align-items: center;
     }
 
     .badge {
@@ -199,7 +204,7 @@
       100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
     }
 
-    /* Modallar */
+    /* Modal Pencere */
     .modal {
       display: none;
       position: fixed;
@@ -216,7 +221,7 @@
       border-radius: 24px;
       padding: 28px;
       width: 90%;
-      max-width: 520px;
+      max-width: 500px;
       position: relative;
       box-shadow: 0 20px 50px rgba(0,0,0,0.8);
     }
@@ -278,16 +283,18 @@
       <div class="card">
         <h3>
           🧩 Tarih Bulmacası
-          <span id="soruSayaci" class="badge">Hazırlanıyor...</span>
+          <span id="soruSayaci" class="badge">Kilitli 🔒</span>
         </h3>
         
         <div class="progress-container">
           <div id="progressFill" class="progress-fill"></div>
         </div>
 
-        <div class="question-box" id="soru">Sorular sunucudan çekiliyor, lütfen bekleyin...</div>
+        <div class="question-box" id="soru">
+          🔒 Soruyu görmek ve harita konumunu açmak için yukarıdaki <b>'Yarışmayı ve Süreyi Başlat'</b> butonuna tıklayın.
+        </div>
         
-        <input type="text" id="cevap" placeholder="Cevabınızı buraya yazın..." />
+        <input type="text" id="cevap" placeholder="Cevabınızı yazın..." />
         <button onclick="cevapGonder()">Cevabı Gönder 🚀</button>
       </div>
     </div>
@@ -308,26 +315,27 @@
   <div id="qrModal" class="modal">
     <div class="modal-content">
       <button class="close-btn" onclick="qrModalKapat()">✕</button>
-      <h3 style="color: #38bdf8;">📷 QR Kodu Kameraya Gösterin</h3>
+      <h3 style="color: #38bdf8;">📷 QR Kod Tara</h3>
       <div id="reader"></div>
     </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // Pamukova Merkezli Harita İlklendirmesi
+    // Pamukova Merkezli Harita
     const map = L.map('map', {
       center: [40.5018, 30.1585],
       zoom: 15,
       zoomControl: false
     });
 
-    // 🌟 HD UYDU HARİTASI (ESRI World Imagery)
-    // maxNativeZoom ve maxZoom ayarları sayesinde harita çok yaklaşıldığında gri ekran vermez!
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      maxNativeZoom: 19, // Harita kütüphanesinin son çözünürlük sınırı
-      maxZoom: 24,       // Bizim izin verdiğimiz ekstra yakınlaştırma (Zoom yapınca pikseller ölçeklenir kaybolmaz)
-      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    // 🌍 GERÇEK GOOGLE HYBRID UYDU HARİTASI (Uydu + Sokaklar + Binalar)
+    // maxNativeZoom: 20 sayesinde sınırsız yakınlaştırmada net kalır, grileşmez!
+    L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+      maxNativeZoom: 20,
+      maxZoom: 22,
+      subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+      attribution: '&copy; Google Maps'
     }).addTo(map);
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -347,31 +355,36 @@
       iconAnchor: [19, 19]
     });
 
-    // Sunucudan soruları önceden çek
+    // Sunucudan soruları önceden indir ama ekrana basma (Gizli tut)
     fetch('/api/sorular')
       .then(res => res.json())
       .then(data => {
         sorular = data;
-        document.getElementById('soruSayaci').innerText = "Hazır!";
-        document.getElementById('soru').innerHTML = "✅ <b>Sorular yüklendi!</b><br><br>Yarışmaya başlamak için yukarıdaki yeşil <b>'Yarışmayı ve Süreyi Başlat'</b> butonuna tıklayın.";
       })
       .catch(err => {
-        document.getElementById('soru').innerText = "❌ Sunucuya bağlanılamadı. Lütfen sayfayı yenileyin.";
+        console.error("Sorular yüklenemedi:", err);
       });
 
-    // START BUTONUNA BASINCA ÇALIŞACAK FONKSİYON
+    // YARIŞMAYI VE SÜREYİ BAŞLATAN FONKSİYON
     function yarismayiBaslat() {
-      if (sorular.length === 0) return alert("⏳ Sorular henüz yüklenmedi veya sunucuda bir hata var.");
-      if (yarismaBasladi) return; // Zaten başladıysa tekrar basılmasın
+      if (sorular.length === 0) return alert("⏳ Sorular henüz yükleniyor veya sunucuda bir sorun var. Lütfen birkaç saniye bekleyip tekrar deneyin.");
+      if (yarismaBasladi) return;
+
+      const kullanici = document.getElementById('kullanici').value.trim();
+      if (!kullanici) return alert("⚠️ Lütfen yarışmaya başlamadan önce Adınızı / Rumuzunuzu girin!");
 
       baslangicZamani = Date.now();
       yarismaBasladi = true;
+
       const btn = document.getElementById('startBtn');
-      btn.innerText = "⚡ Süre Çalışıyor! Bol Şans";
-      btn.style.background = "#475569";
+      btn.innerText = "⚡ Süre Çalışıyor! Başarılar";
+      btn.style.background = "#334155";
+      btn.style.cursor = "default";
       btn.disabled = true;
 
-      // İlk soruyu ve harita konumunu ekrana yükle
+      document.getElementById('kullanici').disabled = true;
+
+      // İlk soruyu ve haritayı şimdi yükle
       soruyuEkranaYukle();
     }
 
@@ -380,24 +393,27 @@
       document.getElementById('soruSayaci').innerText = `Soru ${mevcutSoruIndex + 1} / ${sorular.length}`;
       document.getElementById('soru').innerText = aktif.soru;
       
-      // Progress bar güncelle
+      // Progress Bar Güncelle
       const yuzde = ((mevcutSoruIndex + 1) / sorular.length) * 100;
       document.getElementById('progressFill').style.width = `${yuzde}%`;
 
-      // Harita Konumunu Güncelle ve Pin Ekle
+      // Haritada Pin Göster ve Oraya Odaklan
       if (currentMarker) map.removeLayer(currentMarker);
       
-      map.flyTo([aktif.lat, aktif.lng], 16, { duration: 1.2 });
+      map.flyTo([aktif.lat, aktif.lng], 17, { duration: 1.5 });
       
       currentMarker = L.marker([aktif.lat, aktif.lng], { icon: ipucuIcon }).addTo(map)
-        .bindPopup(`<b>📍 İpucu Noktası ${mevcutSoruIndex + 1}</b><br>${aktif.soru}`).openPopup();
+        .bindPopup(`<b>📍 İpucu Noktası ${mevcutSoruIndex + 1}</b>`).openPopup();
     }
 
     function cevapGonder() {
-      if (!yarismaBasladi) return alert("⚠️ Lütfen önce 'Yarışmayı ve Süreyi Başlat' butonuna basın!");
+      if (!yarismaBasladi) return alert("⚠️ Lütfen önce 'Yarışmayı ve Süreyi Başlat' butonuna tıklayın!");
       
-      const kullaniciAdi = document.getElementById('kullanici').value.trim() || "Anonim Oyuncu";
-      const cevap = document.getElementById('cevap').value;
+      const kullaniciAdi = document.getElementById('kullanici').value.trim();
+      const cevap = document.getElementById('cevap').value.trim();
+
+      if (!cevap) return alert("⚠️ Lütfen bir cevap girin!");
+
       const gecenSure = ((Date.now() - baslangicZamani) / 1000).toFixed(2);
       const tamamlandi = mevcutSoruIndex === sorular.length - 1;
 
@@ -419,9 +435,9 @@
           document.getElementById('cevap').value = '';
           
           if (data.bitti) {
-            siralamaModalAc(); // Yarışma bittiyse skor tablosunu aç
+            siralamaModalAc();
           } else {
-            mevcutSoruIndex++; // Bitmediyse sonraki soruya geç
+            mevcutSoruIndex++;
             soruyuEkranaYukle();
           }
         }
@@ -434,7 +450,7 @@
         .then(data => {
           const liste = document.getElementById('liderlerListesi');
           if (data.length === 0) {
-            liste.innerHTML = "<li style='justify-content:center; color:#64748b;'>Henüz skor kaydedilmedi.</li>";
+            liste.innerHTML = "<li style='justify-content:center; color:#64748b;'>Henüz kayıtlı skor yok.</li>";
           } else {
             const rozetler = ['🥇', '🥈', '🥉'];
             liste.innerHTML = data.map((item, index) => 
@@ -450,7 +466,7 @@
 
     function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
 
-    // Kamera Desteği
+    // Kamera / QR Tara Mantığı
     function qrModalAc() {
       document.getElementById('qrModal').style.display = 'flex';
       if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
@@ -463,13 +479,13 @@
         .catch(() => {
           html5QrCode.start({ facingMode: "user" }, config, onScanSuccess)
             .then(() => isScanning = true)
-            .catch(err => alert("⚠️ Kamera açılamadı. Kamera izninizi kontrol edin!"));
+            .catch(() => alert("⚠️ Kamera açılamadı. Kamera izinlerinizi kontrol edin!"));
         });
     }
 
     function onScanSuccess(decodedText) {
       document.getElementById('cevap').value = decodedText;
-      alert("✅ QR Kod Okundu: " + decodedText);
+      alert("✅ QR Kod Başarıyla Tarandı: " + decodedText);
       qrModalKapat();
     }
 
