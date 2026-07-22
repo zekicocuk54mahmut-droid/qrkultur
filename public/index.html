@@ -82,14 +82,19 @@
       width: 100%; 
     }
 
-    #map { 
+    /* Beyaz ekranı önlemek için Harita Konteyner Arka Planı Siyah/Karanlık yapıldı */
+    #map, .leaflet-container { 
       flex: 1.6; 
       min-height: 550px; 
       border-radius: 20px; 
       border: 1px solid var(--border); 
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
       z-index: 1;
-      background: #000;
+      background: #0b0f19 !important;
+    }
+
+    .leaflet-tile {
+      background-color: #0b0f19 !important;
     }
     
     .panel { flex: 1; display: flex; flex-direction: column; gap: 20px; }
@@ -111,7 +116,6 @@
       align-items: center;
     }
 
-    /* İlerleme Çubuğu (Progress Bar) */
     .progress-container {
       width: 100%;
       background: rgba(255,255,255,0.08);
@@ -204,7 +208,6 @@
       100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
     }
 
-    /* Modal Pencere */
     .modal {
       display: none;
       position: fixed;
@@ -322,17 +325,18 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // Pamukova Merkezli Harita
+    // Pamukova Merkezli Harita Başlatma
     const map = L.map('map', {
       center: [40.5018, 30.1585],
       zoom: 15,
       zoomControl: false
     });
 
-    // 🌍 GERÇEK GOOGLE HYBRID UYDU HARİTASI (Uydu + Sokaklar + Binalar)
-    // maxNativeZoom: 20 sayesinde sınırsız yakınlaştırmada net kalır, grileşmez!
-    L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-      maxNativeZoom: 20,
+    // 🌍 KESİNTİSİZ GOOGLE HYBRID UYDU KATMANI (BEYAZ EKRAN KORUMALI)
+    // maxNativeZoom: 18 -> Google'ın fiziki fotoğraf sınırıdır.
+    // maxZoom: 22 -> Oyuncunun seviye 22'ye kadar yapay (kesintisiz) olarak yakınlaşmasını sağlar.
+    L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+      maxNativeZoom: 18,
       maxZoom: 22,
       subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
       attribution: '&copy; Google Maps'
@@ -355,19 +359,17 @@
       iconAnchor: [19, 19]
     });
 
-    // Sunucudan soruları önceden indir ama ekrana basma (Gizli tut)
+    // Sunucudan soruları indir ama yarışma başlayana kadar ekrana basma
     fetch('/api/sorular')
       .then(res => res.json())
       .then(data => {
         sorular = data;
       })
-      .catch(err => {
-        console.error("Sorular yüklenemedi:", err);
-      });
+      .catch(err => console.error("Sorular yüklenirken hata:", err));
 
     // YARIŞMAYI VE SÜREYİ BAŞLATAN FONKSİYON
     function yarismayiBaslat() {
-      if (sorular.length === 0) return alert("⏳ Sorular henüz yükleniyor veya sunucuda bir sorun var. Lütfen birkaç saniye bekleyip tekrar deneyin.");
+      if (sorular.length === 0) return alert("⏳ Sorular yükleniyor, lütfen 2-3 saniye bekleyip tekrar basın.");
       if (yarismaBasladi) return;
 
       const kullanici = document.getElementById('kullanici').value.trim();
@@ -384,7 +386,7 @@
 
       document.getElementById('kullanici').disabled = true;
 
-      // İlk soruyu ve haritayı şimdi yükle
+      // İlk soruyu ve haritayı aktif et
       soruyuEkranaYukle();
     }
 
@@ -393,11 +395,9 @@
       document.getElementById('soruSayaci').innerText = `Soru ${mevcutSoruIndex + 1} / ${sorular.length}`;
       document.getElementById('soru').innerText = aktif.soru;
       
-      // Progress Bar Güncelle
       const yuzde = ((mevcutSoruIndex + 1) / sorular.length) * 100;
       document.getElementById('progressFill').style.width = `${yuzde}%`;
 
-      // Haritada Pin Göster ve Oraya Odaklan
       if (currentMarker) map.removeLayer(currentMarker);
       
       map.flyTo([aktif.lat, aktif.lng], 17, { duration: 1.5 });
@@ -412,7 +412,7 @@
       const kullaniciAdi = document.getElementById('kullanici').value.trim();
       const cevap = document.getElementById('cevap').value.trim();
 
-      if (!cevap) return alert("⚠️ Lütfen bir cevap girin!");
+      if (!cevap) return alert("⚠️ Lütfen cevabınızı yazın!");
 
       const gecenSure = ((Date.now() - baslangicZamani) / 1000).toFixed(2);
       const tamamlandi = mevcutSoruIndex === sorular.length - 1;
@@ -485,7 +485,7 @@
 
     function onScanSuccess(decodedText) {
       document.getElementById('cevap').value = decodedText;
-      alert("✅ QR Kod Başarıyla Tarandı: " + decodedText);
+      alert("✅ QR Kod Okundu: " + decodedText);
       qrModalKapat();
     }
 
